@@ -1,51 +1,60 @@
-#include <iostream>
 #include <thread>
-#include <chrono>
-#include "initlibrary.h"
-
-#include "inittaskcontainer.h"
-
+#include <filesystem>
 #include <loglib/loglib.h>
+
+#include "inittaskherder.h"
+#include "inittaskparser.h"
 
 using namespace std;
 
-int main()
+#define DEFAULT_TASK_LOCATION "/etc/init_tasks"
+
+std::string taskLocation = DEFAULT_TASK_LOCATION;
+
+void parseArgs(int argc, char* argv[]){
+    int i = 1;
+    while (i < argc){
+        if (strcmp(argv[i], "--location") == 0) {
+            if (++i == argc){
+                LOG_ERROR("--location argument is present, but actual location is missing");
+                exit(1);
+            }
+            taskLocation = argv[i++];
+            continue;
+        }
+    }
+}
+
+int getCPUCoreNumber(){
+    return std::thread::hardware_concurrency();
+}
+
+std::vector<init::InitTask> parseTasksInFolder(std::string folder){
+    std::vector<init::InitTask> tasks;
+    for (const auto& directoryEntry: std::filesystem::directory_iterator(folder)){
+        if (directoryEntry.is_regular_file()){
+            LOG_DEBUG_F("Found task file: {}", directoryEntry.path().string());
+            auto [success, task] = taskparser_parseTask(directoryEntry.path());
+            if (success){
+                tasks.push_back(task);
+            } else {
+                LOG_ERROR_F("Could not parse {}", directoryEntry.path().string());
+            }
+        }
+    }
+    return tasks;
+}
+
+int main(int argc, char* argv[])
 {
-    loglib::logger().setDefaultName("notinit");
+    loglib::logger().setDefaultName("init");
     loglib::logger().registerLogger(logging::LOGGER_FILE);
     loglib::logger().registerLogger(logging::LOGGER_CONSOLE);
 
-    auto cb = [](std::string s, init::TASK_STATUS ts){
-        std::cout << "Task finished: " << s << ", result: " << ts << std::endl;
-    };
+    parseArgs(argc, argv);
+    int maxConcurrentJobs = getCPUCoreNumber();
 
-    auto it = init::InitTask{"aaa"};
-    it.setStartCmd("echo hello1 && sleep 5 && echo hello2");
-    InitTaskContainer itc {it};
-    itc.setCb(cb);
-    itc.run();
-
-    std::this_thread::sleep_for(std::chrono::seconds(7));
-    itc.stop();
-    std::cout << "done" << std::endl;
-
-    /*InitLibrary initLib{"/home/root/init_test"};
-
-    std::vector<init::InitTask*> tasks;
-
-    init::InitTask* task;
-    for (int i = 0; i < 15; ++i){
-        while ((task = initLib.getNewTask()) != nullptr){
-            std::cout << "Got task: " << task->getName() << std::endl;
-            tasks.push_back(task);
-        }
-
-        for (init::InitTask* task: tasks){
-            std::cout << "Finishing task: " << task->getName() << std::endl;
-            initLib.setTaskDone(task->getName());
-        }
-        tasks.clear();
-    }*/
-
+    std::vector<init::InitTask> tasks = parseTasksInFolder(taskLocation);
+    InitTaskHerder initTaskHerder {maxConcurrentJobs, tasks};
     return 0;
 }

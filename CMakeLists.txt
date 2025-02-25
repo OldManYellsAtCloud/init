@@ -11,7 +11,7 @@ find_package(SettingsLib REQUIRED)
 add_executable(init main.cpp
     inittask.h inittask.cpp
     inittaskparser.h
-    initlibrary.h initlibrary.cpp
+
     inittaskcontainer.h inittaskcontainer.cpp
     utils.h
     inittaskherder.h inittaskherder.cpp)
