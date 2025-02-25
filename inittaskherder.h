@@ -14,6 +14,7 @@ class InitTaskHerder
     std::vector<init::InitTask> allTasks;
     std::vector<InitTaskContainer> currentTasks;
     void removeDependency(std::string dependencyName);
+    void removeCurrentTask(std::string& name);
 public:
     void taskDoneNotification(std::string name, init::TASK_STATUS status);
     InitTaskHerder(int maxConcurrentTasks, std::vector<init::InitTask> tasks);

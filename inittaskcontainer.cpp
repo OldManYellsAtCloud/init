@@ -84,3 +84,11 @@ init::InitTask &InitTaskContainer::getTask()
     return task_;
 }
 
+InitTaskContainer &InitTaskContainer::operator=(InitTaskContainer other)
+{
+    if (this != &other){
+        task_ = other.task_;
+        taskStatusCallback = other.taskStatusCallback;
+    }
+    return *this;
+}

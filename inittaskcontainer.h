@@ -20,8 +20,9 @@ public:
     void restart();
     void setCb(std::function<void(std::string, init::TASK_STATUS)> cb);
     init::TASK_STATUS getState();
-
     init::InitTask& getTask();
+
+    InitTaskContainer& operator=(InitTaskContainer other);
 };
 
 #endif // INITTASKCONTAINER_H
