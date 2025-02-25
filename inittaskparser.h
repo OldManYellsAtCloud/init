@@ -1,8 +1,8 @@
 #ifndef INITTASKPARSER_H
 #define INITTASKPARSER_H
 #include "inittask.h"
+#include <loglib/loglib.h>
 #include <fstream>
-#include <iostream>
 
 static std::string taskparser_extractInfo(const std::vector<std::string>& lines, const std::string& prefix){
     for (const std::string& s: lines){
@@ -65,24 +65,21 @@ static std::pair<bool, init::InitTask> taskparser_parseTask(std::string path){
     bool success = true;
 
     std::string name = taskparser_extractInfo(allLines, "Name: ");
-    std::cout << "name: " << name << std::endl;
     std::string startCmd = taskparser_extractInfo(allLines, "Command: ");
-    std::cout << "start cmd: " << startCmd << std::endl;
     std::string stopCmd = taskparser_extractInfo(allLines, "StopCommand: ");
     std::string runOnce = taskparser_extractInfo(allLines, "RunOnce: ");
     std::string enabled = taskparser_extractInfo(allLines, "Enabled: ");
     std::string type = taskparser_extractInfo(allLines, "Type: ");
-    std::cout << "type: " << type << std::endl;
     std::string dependencies = taskparser_extractInfo(allLines, "Dependencies: ");
 
     if (name.empty()){
-        std::cerr << "Missing name in " << path << std::endl;
+        LOG_ERROR_F("Missing name in {}", path);
         success = false;
     }
     init::InitTask it{name};
 
     if (!taskparser_validateTaskType(type)){
-        std::cerr << "Invalid task: " << type << " in " << path << std::endl;
+        LOG_ERROR_F("Invalid task: {} in {}", type, path);
         success = false;
     } else {
         it.setTaskType(taskparser_parseTaskType(type));
